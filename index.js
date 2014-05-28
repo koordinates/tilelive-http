@@ -1,7 +1,8 @@
 "use strict";
 
 var http = require("http"),
-    url = require("url");
+    url = require("url"),
+    backoff = require("backoff");
 var request = require("request");
 var version = require("./package.json").version;
 
@@ -23,30 +24,37 @@ HttpSource.prototype.getTile = function(z, x, y, callback) {
     "User-Agent": "tilelive-http/" + version
   };
 
-  return request.get({
-    uri: tileUrl,
-    encoding: null,
-    headers: headers
-  }, function(err, rsp, body) {
-    if (err) {
-      return callback(err);
-    }
+  function get(callback) {
+    return request.get({
+      uri: tileUrl,
+      encoding: null,
+      headers: headers
+    }, function(err, rsp, body) {
+      if (err) {
+        return callback(err);
+      }
 
-    switch (rsp.statusCode) {
-    case 200:
-      var rspHeaders = {
-        "Content-Type": rsp.headers["content-type"]
-      };
+      switch (rsp.statusCode) {
+      case 200:
+        var rspHeaders = {
+          "Content-Type": rsp.headers["content-type"]
+        };
 
-      return callback(null, body, rspHeaders);
+        return callback(null, body, rspHeaders);
 
-    case 404:
-      return callback(new Error('Tile does not exist'));
+      case 404:
+        return callback(new Error('Tile does not exist'));
 
-    default:
-      return callback(new Error("Upstream error: " + rsp.statusCode));
-    }
-  });
+      default:
+        return callback(new Error("Upstream error: " + rsp.statusCode));
+      }
+    });
+  }
+
+  var call = backoff.call(get, callback);
+  call.setStrategy(new backoff.FibonacciStrategy({initialDelay:1000, maxDelay:60000}));
+  call.failAfter(10);
+  call.start();
 };
 
 HttpSource.prototype.getInfo = function(callback) {
