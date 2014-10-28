@@ -11,6 +11,16 @@ http.globalAgent.maxSockets = 100;
 var HttpSource = function(uri, callback) {
   this.source = url.format(uri);
 
+  this.headers = {
+    "User-Agent": "tilelive-http/" + version
+  };
+  if (process.env.TILELIVE_HTTP_HEADERS) {
+    var envHeaders = JSON.parse(process.env.TILELIVE_HTTP_HEADERS);
+    for (var key in envHeaders) {
+      self.headers[key] = envHeaders[key];
+    }
+  }
+
   return callback(null, this);
 };
 
@@ -20,15 +30,11 @@ HttpSource.prototype.getTile = function(z, x, y, callback) {
     .replace(/{x}/i, x)
     .replace(/{y}/i, y);
 
-  var headers = {
-    "User-Agent": "tilelive-http/" + version
-  };
-
   function get(callback) {
     return request.get({
       uri: tileUrl,
       encoding: null,
-      headers: headers
+      headers: this.headers
     }, function(err, rsp, body) {
       if (err) {
         return callback(err);
