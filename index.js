@@ -30,11 +30,13 @@ HttpSource.prototype.getTile = function(z, x, y, callback) {
     .replace(/{x}/i, x)
     .replace(/{y}/i, y);
 
+  var headers = this.headers;
+
   function get(callback) {
     return request.get({
       uri: tileUrl,
       encoding: null,
-      headers: this.headers
+      headers: headers
     }, function(err, rsp, body) {
       if (err) {
         return callback(err);
