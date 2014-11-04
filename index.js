@@ -17,7 +17,7 @@ var HttpSource = function(uri, callback) {
   if (process.env.TILELIVE_HTTP_HEADERS) {
     var envHeaders = JSON.parse(process.env.TILELIVE_HTTP_HEADERS);
     for (var key in envHeaders) {
-      self.headers[key] = envHeaders[key];
+      this.headers[key] = envHeaders[key];
     }
   }
 
